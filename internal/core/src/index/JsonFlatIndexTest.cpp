@@ -757,6 +757,7 @@ class JsonFlatIndexExprTest : public ::testing::Test {
             R"({"a": 1, "b": 2})",
             R"({})",
             R"(null)",
+            R"({"a": [2]})",
         };
 
         auto json_index_path = "";
@@ -874,6 +875,27 @@ TEST_F(JsonFlatIndexExprTest, TestComparisonUnknowns) {
     EXPECT_EQ(final.count(), 2);
     EXPECT_TRUE(final[0]);
     EXPECT_TRUE(final[13]);
+    EXPECT_FALSE(final[16]);
+}
+
+TEST_F(JsonFlatIndexExprTest, TestTermUnknowns) {
+    proto::plan::GenericValue value;
+    value.set_int64_val(2);
+    auto term_expr = std::make_shared<expr::TermFilterExpr>(
+        expr::ColumnInfo(json_fid_, DataType::JSON, {"a"}),
+        std::vector<proto::plan::GenericValue>{value},
+        false);
+    auto not_term_expr = std::make_shared<expr::LogicalUnaryExpr>(
+        expr::LogicalUnaryExpr::OpType::LogicalNot, term_expr);
+    auto plan = std::make_shared<plan::FilterBitsNode>(DEFAULT_PLANNODE_ID,
+                                                       not_term_expr);
+    auto final = query::ExecuteQueryExpr(
+        plan, segment_.get(), json_data_.size(), MAX_TIMESTAMP);
+    EXPECT_EQ(final.count(), 3);
+    EXPECT_TRUE(final[0]);
+    EXPECT_TRUE(final[2]);
+    EXPECT_TRUE(final[13]);
+    EXPECT_FALSE(final[16]);
 }
 
 TEST_F(JsonFlatIndexExprTest, TestExistsExpr) {
@@ -883,7 +905,7 @@ TEST_F(JsonFlatIndexExprTest, TestExistsExpr) {
         std::make_shared<plan::FilterBitsNode>(DEFAULT_PLANNODE_ID, expr);
     auto final = query::ExecuteQueryExpr(
         plan, segment_.get(), json_data_.size(), MAX_TIMESTAMP);
-    EXPECT_EQ(final.count(), 12);
+    EXPECT_EQ(final.count(), 13);
     EXPECT_FALSE(final[5]);
     EXPECT_FALSE(final[7]);
     EXPECT_FALSE(final[14]);

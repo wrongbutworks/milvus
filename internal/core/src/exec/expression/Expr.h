@@ -2223,6 +2223,21 @@ class SegmentExpr : public Expr {
         return true;
     }
 
+    bool
+    ShouldFallbackJsonFlatIndexScalarPredicateToRawData(
+        DataType data_type) const {
+        if (data_type != DataType::JSON || pinned_index_.empty()) {
+            return false;
+        }
+
+        auto is_root_json_path =
+            nested_path_.empty() ||
+            (nested_path_.size() == 1 && nested_path_[0].empty());
+        return !is_root_json_path &&
+               dynamic_cast<const index::JsonFlatIndex*>(
+                   pinned_index_[0].get()) != nullptr;
+    }
+
  public:
     bool
     CanUseNestedIndex() const override {

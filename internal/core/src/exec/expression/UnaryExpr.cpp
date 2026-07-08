@@ -1923,6 +1923,11 @@ PhyUnaryRangeFilterExpr::DetermineExecPath() {
         data_type = expr_->column_.element_type_;
     }
 
+    if (ShouldFallbackJsonFlatIndexScalarPredicateToRawData(data_type)) {
+        exec_path_ = ExprExecPath::RawData;
+        return;
+    }
+
     bool can_use = false;
     switch (data_type) {
         case DataType::BOOL:

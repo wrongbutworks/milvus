@@ -1232,6 +1232,11 @@ PhyTermFilterExpr::DetermineExecPath() {
         data_type = expr_->column_.element_type_;
     }
 
+    if (ShouldFallbackJsonFlatIndexScalarPredicateToRawData(data_type)) {
+        exec_path_ = ExprExecPath::RawData;
+        return;
+    }
+
     // ARRAY type cannot use scalar index
     if (data_type == DataType::ARRAY) {
         exec_path_ = ExprExecPath::RawData;
